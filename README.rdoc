@@ -2,18 +2,19 @@
 
 - two options: abstract class TimezoneService / module TimezoneService ... decided for Rubyish mixin approach as it does not require to define "abstract" class and there are no instance variables involved
 
-- error handling by checking return values => converted to exceptions
+- error handling by checking return values => converted to exceptions where noticed
 
 - the logging certainly needs some smarter handling, all those arbitrary "\t" are making the code quite messy and lousely coupled on location (you move the line, you have to change the log indentation) ... for example automatic indentation for every stack trace level you enter...
 
-- sometimes, I changed the functionality a bit because it cried for help - like overriding the used service via options parameter just did not make any sense in current setup or passing by information about used lookup method inside GeoInfo (the user calls it and user knows it, anyway, the responsibility is somewhere else and YAGNI)
+- sometimes, I changed the functionality a bit because it cried for help - like overriding the used service via options parameter just did not make any sense in current setup or passing by information about used lookup method inside GeoInfo (the user calls it and user knows it, anyway, the responsibility is somewhere else and YAGNI); in fact, the whole options hash in most of the methods is quite useless but it still there (ready to be removed on will ;)
 
 - raw mostly removed - YAGNI and same as above
 
 - location lookup by TZInfo was really mess
-    - too long variables
+    - long variables
     - error handling not exception driven
+    - comments/log messages instead of methods
 
-- TimezoneService#guess_rails_timezone refactored quite nicly in my opinion ;)
+- TimezoneInfo#guess_rails_timezone refactored quite nicely in my opinion ;)
 
 - really good job in Geonames location look_up ;)
