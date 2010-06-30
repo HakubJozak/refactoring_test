@@ -30,6 +30,7 @@ class GeoInfo
   def self.lookup_location(zip, city, country, options = {})
     Rails.logger.debug "\t1) Determine location based on zip, city, country"
 
+    # returns first block returning non-zero see ./ext/responsibility_chain.rb    
     @location_services.responsibility_chain(LocationNotFound) do |service|
       service.lookup_by_address!(zip, city, country, options)          
     end
@@ -37,8 +38,7 @@ class GeoInfo
 
   def self.lookup_time_zone(latitude, longitude, options = {})
     Rails.logger.debug "\n\t2) Determine time zone based on longitude/latitude"
-    # Returns first block returning non-zero
-    # see ./ext/responsibility_chain.rb
+
     @timezone_services.responsibility_chain(TimezoneNotFound) do |service|
       service.lookup_time_zone( latitude, longitude, options)      
     end
