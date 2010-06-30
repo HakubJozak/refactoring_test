@@ -8,4 +8,12 @@
 
 - the logging certainly needs some smarter handling, all those arbitrary "\t" are making the code quite messy and lousely coupled on location (you move the line, you have to change the log indentation) ... for example automatic indentation for every stack trace level you enter...
 
-- sometimes, I changed the functionality a bit because it cried for help - like overriding the used service vie options parameter just did not make any sense in current setup
+- sometimes, I changed the functionality a bit because it cried for help - like overriding the used service via options parameter just did not make any sense in current setup or passing by information about used lookup method inside GeoInfo (the user calls it and user knows it, anyway, the responsibility is somewhere else and YAGNI)
+
+- raw mostly removed - YAGNI and same as above
+
+- location lookup by TZInfo was really mess
+    - too long variables
+    - error handling not exception driven
+
+- really good job in Geonames location look_up ;)

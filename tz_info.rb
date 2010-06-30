@@ -6,63 +6,46 @@ class TZInfo
   }.freeze
 
 
-  def lookup(zip, city, country, options = {})
-    geo_info = GeoInfo.new
+  # TODO - pass just GeoInfo instead?
+  # throws LocationNotFound if no location is found
+  #
+  def lookup_by_address!(_zip, _city, _country, options = {})
+    info = GeoInfo.new
+    info.city = _city
+    info.country = _country
+    info.zip = _zip
 
     Rails.logger.debug "\t1) Try to get TZInfo country"
-    tz_country = TZInfo::Country.get(country) 
+    country = TZInfo::Country.get(_country) 
+    raise LocationNotFound.new
 
 
-    if tz_country
-      Rails.logger.debug "\t\tTZInfo country FOUND: #{tz_country.inspect}"
-      tz_country_time_zone_identifiers = tz_country.zone_identifiers.collect{|zone| zone.split('/').last}
-      
-      Rails.logger.debug "\t2) Try to get TZInfo country time zone using city: #{city} => #{tz_country_time_zone_identifiers.inspect}"
-      if tz_country_time_zone_identifiers.include?(city) then
-        time_zone = tz_country_time_zone_identifiers[tz_country_time_zone_identifiers.index(city)]
-        time_zone = ActiveSupport::TimeZone[time_zone]
-        tz_country_time_zone = TZInfo::Indexes::Countries.instance_variable_get(:"@countries")[tz_country.code].zones[tz_country_time_zone_identifiers.index(city)]
-        Rails.logger.debug "\t\tTZInfo country time zone FOUND: #{tz_country_time_zone.inspect}"
-      elsif tz_country_time_zone_identifiers.size == 1
-        time_zone = tz_country_time_zone_identifiers[0]
-        time_zone = ActiveSupport::TimeZone[time_zone]
-        tz_country_time_zone = TZInfo::Indexes::Countries.instance_variable_get(:"@countries")[tz_country.code].zones[0]
-        Rails.logger.debug "\t\tTZInfo country time zone FOUND (only 1): #{tz_country_time_zone.inspect}"
-      end
-
-
-      Rails.logger.debug "\t3) Time zone found ?"
-      if time_zone
-        Rails.logger.debug "\t\t Time zone FOUND: #{tz_country_time_zone.inspect}"
-        geo_info_attribs[:search][:key] = :tzinfo
-        geo_info = GeoInfo.new(geo_info_attribs.merge({
-                                                        :longitude    => tz_country_time_zone.longitude,
-                                                        :latitude     => tz_country_time_zone.latitude,
-                                                        :time_zone    => {
-                                                          :active_support => time_zone,
-                                                          :raw => {}
-                                                        },
-                                                        :raw          => {
-                                                          :country            => tz_country,
-                                                          :country_time_zone  => tz_country_time_zone
-                                                        }
-                                                      }))
-      else
-        Rails.logger.debug "\t\t Time zone NOT FOUND"
-      end
-
-      
-    else
-      Rails.logger.debug "\t\tTZInfo country NOT FOUND: #{country.inspect}"
-    end
-
-
+    Rails.logger.debug "\t\tTZInfo country FOUND: #{country.inspect}"
+    identifiers = country.zone_identifiers.collect{|zone| zone.split('/').last}
+    
+    Rails.logger.debug "\t2) Try to get TZInfo country time zone using city: #{city} => #{identifiers.inspect}"     
     
 
-  rescue TZInfo::InvalidCountryCode
-    # translate exception
+    if identifiers.include?(city) then      
+      i = identifiers[identifiers.index(city)]
+      country_time_zone = TZInfo::Indexes::Countries.instance_variable_get(:"@countries")[country.code].zones[identifiers.index(city)]
+      Rails.logger.debug "\t\tTZInfo country time zone FOUND: #{country_time_zone.inspect}"
+    elsif not identifiers.empty?
+      i = identifiers[0]
+      country_time_zone = TZInfo::Indexes::Countries.instance_variable_get(:"@countries")[country.code].zones[0]
+      Rails.logger.debug "\t\tTZInfo country time zone FOUND (only 1): #{country_time_zone.inspect}"
+    else
+      Rails.logger.debug "\t\t Time zone NOT FOUND"
+      raise LocationNotFound.new
+    end
+
+    info.longitude = country_time_zone.longitude
+    info.latitude = country_time_zone.latitude
+    info.time_zone = TimeZoneInfo.new( time_zone, nil, ActiveSupport::TimeZone[time_zone])  
+    
+    Rails.logger.debug "\t\t Time zone FOUND: #{country_time_zone.inspect}"
+  rescue TZInfo::InvalidCountryCode => e
+    # pass the original exception
+    raise LocationNotFound.new("Invalid TZInfo #{e}")
   end  
-
-
-  
 end

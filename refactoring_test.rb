@@ -15,40 +15,7 @@ class GeoInfo
 
   class << self
 
-    def location_services
-      [:tzinfo, :geonames]
-    end
 
-    def time_zone_services
-      [:geonames, :earthtools]
-    end
-
-    def self.lookup_by_location(zip, city, country, options = {})
-      Rails.logger.debug "\t1) Determine location based on zip, city, country"
-
-      services.each do |service|
-        Rails.logger.debug "\tTrying #{service} ..."
-        geo_info = self.service_lookup_location(service, zip, city, country, options)
-        break if geo_info
-      end
-      
-      geo_info
-    end
-
-    #
-    # Tries various services to lookup the timezone with given
-    # +latitude+ and +longitude+
-    #
-    def lookup_time_zone(latitude, longitude, options = {})
-      Rails.logger.debug "\n\t2) Determine time zone based on longitude/latitude"
-
-      time_zone = nil
-      services.each do |service|
-        Rails.logger.debug "\tTrying #{service} ..."
-        time_zone = service.lookup_time_zone( latitude, longitude, options)
-        return time_zone if time_zone
-      end
-    end
 
     def service_lookup_location(service, zip, city, country, options = {})
       geo_info_attribs = {
@@ -102,93 +69,8 @@ class GeoInfo
         # else
         #   Rails.logger.debug "\t\t Time zone NOT FOUND"
         # end
+        
       when :geonames
-        Rails.logger.debug "\t1) Determine longitude/latitude using exact search (AND)"
-
-        # Fix incorrect mappings used by geonames
-        manual_country_translation = {
-          'AX' => 'FI'
-        }
-        country = manual_country_translation[country] if manual_country_translation.include?(country)
-
-        # postalcodesearch with AND => (http://ws.geonames.org/postalCodeSearch?placename=2550%20Kontich%20BE&operator=AND&maxRows=1)
-        geo_query = Geonames::PostalCodeSearchCriteria.new
-        geo_query.place_name = [zip, city, country].compact.reject { |s| s.strip.empty? }.join(" ")
-        geo_query.max_rows = "1"
-        geo_info = Geonames::WebService.postal_code_search geo_query
-
-        if geo_info.size > 0
-          geo_info_attribs[:search][:key] = :exact
-          geo_info = GeoInfo.new(geo_info_attribs.merge({
-            :longitude    => geo_info.first.longitude,
-            :latitude     => geo_info.first.latitude,
-            :raw          => geo_info.first
-          }))
-        else
-          Rails.logger.debug "\tWARNING: No geoinfo could be found for exact search !"
-          Rails.logger.debug "\t\t1.1) Determine longitude/latitude using matched search (OR)"
-
-          # postalcodesearch with OR (http://ws.geonames.org/postalCodeSearch?placename=9999%20Kunticher%20BE&country=BE&operator=OR&maxRows=10)
-          geo_query = Geonames::PostalCodeSearchCriteria.new
-          geo_query.place_name = [zip, city, country].compact.reject { |s| s.strip.empty? }.join(" ")
-          geo_query.country_code = country
-          geo_query.is_or_operator = true
-          geo_query.max_rows = "10"
-          geo_info = Geonames::WebService.postal_code_search geo_query
-          geo_results = []
-          if geo_info.size > 0
-            geo_info.each do |g|
-              geo_results << {
-                :longitude    => g.longitude,
-                :latitude     => g.latitude,
-                :raw          => g
-              }
-            end
-          end
-
-          if geo_results.size > 0 && geo_results.first[:raw].country_code == country
-            geo_info = GeoInfo.new(geo_info_attribs.merge(geo_results.first))
-            geo_info.search.merge!({:key => :matched})
-          else
-            Rails.logger.debug "\t\tWARNING: No geo info could be found for matched search !"
-            Rails.logger.debug "\t\t1.2) Lookup country in results"
-
-            geo_info = geo_results.select{|g| g[:raw].country_code == country}.first
-
-            if geo_info
-              geo_info = GeoInfo.new(geo_info_attribs.merge(geo_info))
-              geo_info.search.merge!({:key => :matched})
-            else
-              Rails.logger.debug "\t\tWARNING: No geo info found in results (city or zip do not exist in country)!"
-              Rails.logger.debug "\t\t1.3) Perform a global search to retrieve the time zone for the country"
-
-              # country search (http://ws.geonames.org/search?q=9999%20Kunticher%20OM&operator=OR&country=OM&maxRows=1)
-              geo_query = Geonames::ToponymSearchCriteria.new
-              #geo_query.q = [zip, city, country].compact.reject { |s| s.strip.empty? }.join(" ")
-              #geo_query.q = country
-              geo_query.country_code = country
-              #geo_query.is_or_operator = true
-              geo_query.max_rows = "1"
-              geo_info = Geonames::WebService.search geo_query
-              geo_results = []
-              if geo_info.toponyms.size > 0
-                geo_info.toponyms.each do |g|
-                  geo_results << {
-                    :longitude    => g.longitude,
-                    :latitude     => g.latitude,
-                    :raw          => g
-                  }
-                end
-              end
-              geo_info = geo_results.select{|g| g[:raw].country_code == country}.first
-
-              if geo_info
-                geo_info = GeoInfo.new(geo_info_attribs.merge(geo_info))
-                geo_info.search.merge!({:key => :search})
-              else
-                # TODO: could even try to lookup city without the country
-                Rails.logger.debug "\t\tWARNING: Could not determine timezone for this event (probably none existing country code) !"
-              end
             end
           end
         end

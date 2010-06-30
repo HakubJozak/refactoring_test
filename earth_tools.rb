@@ -14,11 +14,11 @@ class EarthTools
       doc = REXML::Document.new res.body
       doc.elements.each("timezone") do |element|
         raw_offset  = Geonames::WebService::get_element_child_float( element, 'offset' )
-        timezone_id = nil
+        return TimezoneInfo.new(nil, raw_offset, nil)        
       end
     end
-
-    return TimezoneInfo.new(nil, raw_offset, timezone_id)
+    
+    raise TimezoneNotFound.new('No element <timezone> found in the response')
   end
 
 end

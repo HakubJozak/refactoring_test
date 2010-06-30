@@ -1,24 +1,27 @@
 class GeoInfo
 
+  TimezoneInfo = Struct.new(:raw_offset, :timezone_id, :active_support)
+  
   #
   # in realy I would check if arrays are supplied and they #respond_to? desired methods
   #
   # Example:
   #
   #  GeoInfo.timezone_services = [ Geonames.new, Earthtools.new ]
-  #  GeoInfo.location_services = [ Geonames.new, Earthtools.new ]
+  #  GeoInfo.location_services = [ TZInfo.new, Geonames.new ]
   #
   #  info = GeoInfo.new
   #
   cattr_accessor :timezone_services, :location_services
   
-  attr_accessor :longitude, :latitude, :time_zone, :search, :raw, :service
+  attr_accessor :longitude, :latitude, :time_zone, :search, :service
 
   private :new
   
-  def initialize(params)
+  def initialize(params = {}, &setup)
     params.each { |k,v| instance_variable_set("@#{k}", v) }  
     Rails.logger.debug self.to_s("\t\t")
+    setup.yield(self) if setup
   end
 
   def self.lookup_location(zip, city, country, options = {})
