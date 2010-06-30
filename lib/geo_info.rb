@@ -2,18 +2,19 @@ class TimezoneNotFound < Exception;  end
 class LocationNotFound < Exception;  end    
 
 
+#
+# Example:
+#
+#  GeoInfo.timezone_services = [ Geonames.new, Earthtools.new ]
+#  GeoInfo.location_services = [ TZInfo.new, Geonames.new ]
+#
+#  info = GeoInfo.lookup_location('10100','Prague','Czech Republic')
+#  info = GeoInfo.lookup_time_zone(53.2323,65.01)
+#
+#
 class GeoInfo
-  
-  #
-  # in realy I would check if arrays are supplied and they #respond_to? desired methods
-  #
-  # Example:
-  #
-  #  GeoInfo.timezone_services = [ Geonames.new, Earthtools.new ]
-  #  GeoInfo.location_services = [ TZInfo.new, Geonames.new ]
-  #
-  #  info = GeoInfo.new
-  #
+
+  # in reality I would check if arrays are supplied and if they #respond_to? desired methods  
   cattr_accessor :timezone_services, :location_services
   
   attr_accessor :longitude, :latitude, :time_zone, :search, :service
