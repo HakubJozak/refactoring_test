@@ -1,6 +1,8 @@
-class GeoInfo
+class TimezoneNotFound < Exception;  end
+class LocationNotFound < Exception;  end    
 
-  TimezoneInfo = Struct.new(:raw_offset, :timezone_id, :active_support)
+
+class GeoInfo
   
   #
   # in realy I would check if arrays are supplied and they #respond_to? desired methods
@@ -27,24 +29,23 @@ class GeoInfo
   def self.lookup_location(zip, city, country, options = {})
     Rails.logger.debug "\t1) Determine location based on zip, city, country"
 
-    @location_services.responsibility_chain do |service|
-      service.lookup_location(zip, city, country, options)          
+    @location_services.responsibility_chain(LocationNotFound) do |service|
+      service.lookup_by_address!(zip, city, country, options)          
     end
   end
 
   def lookup_time_zone(latitude, longitude, options = {})
     Rails.logger.debug "\n\t2) Determine time zone based on longitude/latitude"
-
     # Returns first block returning non-zero
     # see ./ext/responsibility_chain.rb
-    @timezone_services.responsibility_chain do |service|
+    @timezone_services.responsibility_chain(TimezoneNotFound) do |service|
       service.lookup_time_zone( latitude, longitude, options)      
     end
   end
   
   
   def to_s(prefix)
-    output = prefix + "Geo info:"
+    output = prefix + "GeoInfo:"
 
     self.instance_variables.each do |var|
       output << prefix

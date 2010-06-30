@@ -1,10 +1,8 @@
 - clearly too many responsibilities in one class => split using Strategy pattern
 
-- two options abstract class TimezoneService / module TimezoneService ... decided for more Rubyish approach as it does not require to define "abstract" class and there are no instance variables involved
+- two options: abstract class TimezoneService / module TimezoneService ... decided for Rubyish mixin approach as it does not require to define "abstract" class and there are no instance variables involved
 
-- error handling by checking return values => converted to exceptions 
-
-- guess_rails_timezone refactored quite nicly in my opinion ;)
+- error handling by checking return values => converted to exceptions
 
 - the logging certainly needs some smarter handling, all those arbitrary "\t" are making the code quite messy and lousely coupled on location (you move the line, you have to change the log indentation) ... for example automatic indentation for every stack trace level you enter...
 
@@ -15,5 +13,7 @@
 - location lookup by TZInfo was really mess
     - too long variables
     - error handling not exception driven
+
+- TimezoneService#guess_rails_timezone refactored quite nicly in my opinion ;)
 
 - really good job in Geonames location look_up ;)
