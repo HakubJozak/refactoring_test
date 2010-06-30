@@ -34,7 +34,7 @@ class GeoInfo
     end
   end
 
-  def lookup_time_zone(latitude, longitude, options = {})
+  def self.lookup_time_zone(latitude, longitude, options = {})
     Rails.logger.debug "\n\t2) Determine time zone based on longitude/latitude"
     # Returns first block returning non-zero
     # see ./ext/responsibility_chain.rb
